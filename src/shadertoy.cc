@@ -26,6 +26,7 @@ void idle();
 void reshape(int x, int y);
 void keyb(unsigned char key, int x, int y);
 unsigned int load_shader(const char *fname);
+bool load_shader_metadata(const char *sdrname);
 Texture *load_texture(const char *fname);
 Texture *load_cubemap(const char *fname_fmt);
 bool parse_args(int argc, char **argv);
@@ -86,10 +87,6 @@ int main(int argc, char **argv)
 
 	glewInit();
 
-	if(!(sdr = load_shader(sdrfname_arg))) {
-		return 1;
-	}
-
 	int dataidx = 0;
 
 	LOADTEX("data/tex00.jpg");
@@ -115,8 +112,16 @@ int main(int argc, char **argv)
 	LOADCUBE("data/cube04_%d.png");
 	LOADCUBE("data/cube05_%d.png");
 
+	load_shader_metadata(sdrfname_arg);
+
+	// override with -t arguments
 	for(size_t i=0; i<tex_arg.size(); i++) {
 		activetex[i] = textures[tex_arg[i]];
+	}
+
+
+	if(!(sdr = load_shader(sdrfname_arg))) {
+		return 1;
 	}
 
 	assert(glGetError() == GL_NO_ERROR);
@@ -222,6 +227,7 @@ unsigned int load_shader(const char *fname)
 	int sz = filesz + strlen(header) + 32;
 
 	char *src = new char[sz + 1];
+	memset(src, ' ', sz);
 	sprintf(src, header, activetex[0]->stype, activetex[1]->stype, activetex[2]->stype, activetex[3]->stype);
 
 	if(fread(src + strlen(src), 1, filesz, fp) < (size_t)filesz) {
@@ -233,6 +239,7 @@ unsigned int load_shader(const char *fname)
 	src[sz] = 0;
 
 	printf("compiling shader: %s\n", fname);
+	//printf("SOURCE: %s\n", src);
 	unsigned int sdr = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(sdr, 1, (const char**)&src, 0);
 	glCompileShader(sdr);
@@ -293,6 +300,34 @@ unsigned int load_shader(const char *fname)
 		uloc.sampler[i] = glGetUniformLocation(prog, buf);
 	}
 	return prog;
+}
+
+bool load_shader_metadata(const char *sdrname)
+{
+	// load shader metadata
+	int idx = 0;
+	char *nbuf = new char[strlen(sdrname) + 6];
+	sprintf(nbuf, "%s.meta", sdrname);
+	printf("looking for metadata file: %s\n", nbuf);
+
+	FILE *fp = fopen(nbuf, "rb");
+	if(fp) {
+		char buf[512];
+		while(fgets(buf, sizeof buf, fp)) {
+			int id;
+			if(sscanf(buf, "texture %d", &id) == 1) {
+				if(idx < 4) {
+					printf("using texture %d in slot %d\n", id, idx);
+					activetex[idx++] = textures[id];
+				}
+			}
+		}
+		fclose(fp);
+		delete [] nbuf;
+		return true;
+	}
+	delete [] nbuf;
+	return false;
 }
 
 Texture *load_texture(const char *fname)
