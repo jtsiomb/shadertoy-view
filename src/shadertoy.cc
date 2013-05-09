@@ -54,6 +54,7 @@ const char *sdrfname_arg;
 			return 1; \
 		} \
 		textures.push_back(tex); \
+		printf("  Texture2D %2d: %s\n", dataidx++, fname); \
 	} while(0)
 
 #define LOADCUBE(fname) \
@@ -63,6 +64,7 @@ const char *sdrfname_arg;
 			return 1; \
 		} \
 		textures.push_back(tex); \
+		printf("TextureCube %2d: %s\n", dataidx++, fname); \
 	} while(0)
 
 int main(int argc, char **argv)
@@ -87,6 +89,8 @@ int main(int argc, char **argv)
 	if(!(sdr = load_shader(sdrfname_arg))) {
 		return 1;
 	}
+
+	int dataidx = 0;
 
 	LOADTEX("data/tex00.jpg");
 	LOADTEX("data/tex01.jpg");
@@ -293,8 +297,6 @@ unsigned int load_shader(const char *fname)
 
 Texture *load_texture(const char *fname)
 {
-	printf("loading texture: %s\n", fname);
-
 	Texture *tex = new Texture;
 	tex->id = img_gltexture_load(fname);
 	if(!tex->id) {
@@ -309,7 +311,6 @@ Texture *load_texture(const char *fname)
 Texture *load_cubemap(const char *fname_fmt)
 {
 	char *fname = new char[strlen(fname_fmt) + 1];
-	printf("loading cubemap: %s\n", fname_fmt);
 
 	Texture *tex = new Texture;
 	tex->targ = GL_TEXTURE_CUBE_MAP;
