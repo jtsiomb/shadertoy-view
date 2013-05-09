@@ -9,3 +9,45 @@ This program is free software. Feel free to use it, modify it, redistribute it
 (with or without modifications), under the terms of the GNU General Public
 License version 3 or, at your option, any later version published by the Free
 Software Foundation. See COPYING for details.
+
+Usage instructions
+------------------
+The idea is that at some point you will be able to write a configuration file
+(see example-shadertoy.conf) to specify paths containing shadertoy fragment
+shaders. Then this program would show you a gallery of thumbnails or something
+equivalent, and let you pick any one to view fullscreen.
+
+At the moment however the usage is pretty rudimentary. You'll have to specify
+the shader to load from the command line, as well as the ID of the texture you
+wish to use in each one of the four sampler slots. The IDs are printed when the
+program starts and loads textures during init, so run it once to see which is
+which.
+
+Example:
+./shadertoy myshader.glsl -t 0 -t 12 -t 3
+
+You will need to download the standard shadertoy data files (images, videos,
+etc) from: https://dl.dropboxusercontent.com/u/89347689/shadertoy_data.tar which
+should be extracted in the shadertoy directory thus creating a data/
+subdirectory with all the data.
+
+
+Compiling
+---------
+To compile shadertoy you'll need the following libraries:
+- GLUT (freeglut is a good choice: http://freeglut.sourceforge.net)
+- GLEW (http://glew.sourceforge.net)
+- imago2 (http://code.google.com/p/libimago/)
+  which in turn needs: libpng, and jpeglib
+
+If you have all the dependencies installed, just type make to compile.
+
+
+TODO
+----
+- create a shader browser with live thumbnails
+- allow interactive selection of the four sampler source datafiles.
+- have a shader metadata file for each shader which will store the sampler
+  source selection.
+- add support for video and audio datafiles
+- add the ability to load a shader directly from a shadertoy url
