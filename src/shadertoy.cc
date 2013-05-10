@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <errno.h>
 #include <assert.h>
 #include <GL/glew.h>
@@ -25,6 +26,8 @@ void idle();
 void idle();
 void reshape(int x, int y);
 void keyb(unsigned char key, int x, int y);
+void mouse(int bn, int state, int x, int y);
+void motion(int x, int y);
 unsigned int load_shader(const char *fname);
 bool load_shader_metadata(const char *sdrname);
 Texture *load_texture(const char *fname);
@@ -44,6 +47,7 @@ std::vector<Texture*> textures;
 Texture notex = { 0, GL_TEXTURE_2D, "2D" };
 Texture *activetex[4] = {&notex, &notex, &notex, &notex};
 int win_width, win_height;
+int mouse_x, mouse_y, click_x, click_y;
 
 std::vector<int> tex_arg;
 const char *sdrfname_arg;
@@ -84,6 +88,8 @@ int main(int argc, char **argv)
 	glutIdleFunc(idle);
 	glutReshapeFunc(reshape);
 	glutKeyboardFunc(keyb);
+	glutMouseFunc(mouse);
+	glutMotionFunc(motion);
 
 	glewInit();
 
@@ -112,6 +118,9 @@ int main(int argc, char **argv)
 	LOADCUBE("data/cube04_%d.png");
 	LOADCUBE("data/cube05_%d.png");
 
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
 	load_shader_metadata(sdrfname_arg);
 
 	// override with -t arguments
@@ -131,6 +140,9 @@ int main(int argc, char **argv)
 
 void disp()
 {
+	time_t tmsec = time(0);
+	struct tm *tm = localtime(&tmsec);
+
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	assert(glGetError() == GL_NO_ERROR);
@@ -140,7 +152,9 @@ void disp()
 	// set uniforms
 	glUniform2f(uloc.resolution, win_width, win_height);
 	glUniform1f(uloc.globaltime, glutGet(GLUT_ELAPSED_TIME) / 1000.0);
-	glUniform4f(uloc.mouse, 0, 0, 0, 0);	// TODO
+	glUniform4f(uloc.mouse, mouse_x, mouse_y, click_x, click_y);
+	glUniform4f(uloc.date, tm->tm_year, tm->tm_mon, tm->tm_mday,
+			tm->tm_sec + tm->tm_min * 60 + tm->tm_hour * 3600);
 	assert(glGetError() == GL_NO_ERROR);
 
 	int tunit = 0;
@@ -199,6 +213,18 @@ void keyb(unsigned char key, int x, int y)
 		}
 		break;
 	}
+}
+
+void mouse(int bn, int state, int x, int y)
+{
+	click_x = x;
+	click_y = y;
+}
+
+void motion(int x, int y)
+{
+	mouse_x = x;
+	mouse_y = y;
 }
 
 static const char *header =
@@ -308,26 +334,33 @@ bool load_shader_metadata(const char *sdrname)
 	int idx = 0;
 	char *nbuf = new char[strlen(sdrname) + 6];
 	sprintf(nbuf, "%s.meta", sdrname);
-	printf("looking for metadata file: %s\n", nbuf);
+	printf("looking for metadata file: %s ...", nbuf);
 
 	FILE *fp = fopen(nbuf, "rb");
-	if(fp) {
-		char buf[512];
-		while(fgets(buf, sizeof buf, fp)) {
-			int id;
-			if(sscanf(buf, "texture %d", &id) == 1) {
+	if(!fp) {
+		printf("not found\n");
+		delete [] nbuf;
+		return false;
+	}
+
+	printf("found\n");
+	char buf[512];
+	while(fgets(buf, sizeof buf, fp)) {
+		int id;
+		if(sscanf(buf, "texture %d", &id) == 1) {
+			if(id < 0) {
+				activetex[idx++] = &notex;
+			} else {
 				if(idx < 4) {
 					printf("using texture %d in slot %d\n", id, idx);
 					activetex[idx++] = textures[id];
 				}
 			}
 		}
-		fclose(fp);
-		delete [] nbuf;
-		return true;
 	}
+	fclose(fp);
 	delete [] nbuf;
-	return false;
+	return true;
 }
 
 Texture *load_texture(const char *fname)
