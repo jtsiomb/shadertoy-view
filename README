@@ -27,8 +27,8 @@ Example:
 ./shadertoy myshader.glsl -t 0 -t 12 -t 3
 
 You will need to download the standard shadertoy data files (images, videos,
-etc) from: https://dl.dropboxusercontent.com/u/89347689/shadertoy_data.tar which
-should be extracted in the shadertoy directory thus creating a data/
+etc) from: https://dl.dropboxusercontent.com/u/89347689/shadertoy_data.tar
+which should be extracted in the shadertoy directory thus creating a data/
 subdirectory with all the data.
 
 
